@@ -1,0 +1,834 @@
+{
+  "project": {
+    "name": "Transparency for Patients at Home",
+    "description": "Building Trust Between Patients, Families, and Hospitals",
+    "version": "1.0.0",
+    "created_at": "2026-01-30",
+    "team": "Deepen"
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "title": "Backend Integration and Architecture",
+      "description": "Implement backend service using Kotlin with Spring Boot, containerized with Docker",
+      "priority": "high",
+      "status": "in_progress"
+    },
+    {
+      "id": "E2",
+      "title": "Hospital-Side Functionality",
+      "description": "Extend functionality to support hospital staff including scheduling and appointment management",
+      "priority": "high",
+      "status": "todo"
+    },
+    {
+      "id": "E3",
+      "title": "UI/UX Improvements",
+      "description": "Improve usability and user experience for patients and families",
+      "priority": "medium",
+      "status": "todo"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "US-001",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Project Setup and Configuration",
+      "description": "As a developer, I want the backend project initialized with proper structure so that we have a foundation to build upon",
+      "priority": "high",
+      "status": "done",
+      "story_points": 3,
+      "tasks": [
+        {
+          "id": "T-001-1",
+          "title": "Initialize Kotlin + Spring Boot project with Gradle",
+          "status": "done"
+        },
+        {
+          "id": "T-001-2",
+          "title": "Set up project package structure (controllers, services, models, repositories)",
+          "status": "done"
+        },
+        {
+          "id": "T-001-3",
+          "title": "Configure application.yml for dev and prod environments",
+          "status": "done"
+        },
+        {
+          "id": "T-001-4",
+          "title": "Create Dockerfile and docker-compose.yml",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "User Authentication System",
+      "description": "As a user, I want to register and login securely so that my data is protected",
+      "priority": "high",
+      "status": "done",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Users can register with email, password, and role",
+        "Users can login and receive JWT token",
+        "Passwords are encrypted using BCrypt",
+        "JWT tokens expire after 24 hours"
+      ],
+      "tasks": [
+        {
+          "id": "T-002-1",
+          "title": "Implement User entity with roles (Patient, Family, Doctor, Nurse)",
+          "status": "done"
+        },
+        {
+          "id": "T-002-2",
+          "title": "Create JWT utility for token generation and validation",
+          "status": "done"
+        },
+        {
+          "id": "T-002-3",
+          "title": "Implement authentication filter",
+          "status": "done"
+        },
+        {
+          "id": "T-002-4",
+          "title": "Create registration and login endpoints",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Role-Based Access Control",
+      "description": "As an admin, I want different users to have different permissions so that data access is properly restricted",
+      "priority": "high",
+      "status": "done",
+      "story_points": 3,
+      "acceptance_criteria": [
+        "Patients can only view their own data",
+        "Family members can view linked patient data",
+        "Hospital staff can access and manage patient records",
+        "Only staff can create appointments and care tasks"
+      ],
+      "tasks": [
+        {
+          "id": "T-003-1",
+          "title": "Configure Spring Security with role-based rules",
+          "status": "done"
+        },
+        {
+          "id": "T-003-2",
+          "title": "Add @PreAuthorize annotations to protected endpoints",
+          "status": "done"
+        },
+        {
+          "id": "T-003-3",
+          "title": "Implement endpoint access validation",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Appointment Management API",
+      "description": "As a user, I want to view and manage appointments through the API so that I can track my healthcare schedule",
+      "priority": "high",
+      "status": "done",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "API supports CRUD operations for appointments",
+        "Appointments have status tracking (scheduled, confirmed, completed, cancelled)",
+        "Appointments can be filtered by date range",
+        "Staff can create appointments for patients"
+      ],
+      "tasks": [
+        {
+          "id": "T-004-1",
+          "title": "Create Appointment entity with all required fields",
+          "status": "done"
+        },
+        {
+          "id": "T-004-2",
+          "title": "Implement AppointmentRepository with custom queries",
+          "status": "done"
+        },
+        {
+          "id": "T-004-3",
+          "title": "Create AppointmentService with business logic",
+          "status": "done"
+        },
+        {
+          "id": "T-004-4",
+          "title": "Implement REST endpoints for appointment management",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Care Task Management API",
+      "description": "As a patient, I want to view and complete daily care tasks so that I can track my health routine",
+      "priority": "high",
+      "status": "done",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Tasks can be created by hospital staff",
+        "Patients can view their assigned tasks",
+        "Patients can mark tasks as complete",
+        "Tasks support different frequencies (once, daily, weekly)"
+      ],
+      "tasks": [
+        {
+          "id": "T-005-1",
+          "title": "Create CareTask entity",
+          "status": "done"
+        },
+        {
+          "id": "T-005-2",
+          "title": "Implement CareTaskRepository",
+          "status": "done"
+        },
+        {
+          "id": "T-005-3",
+          "title": "Create CareTaskService",
+          "status": "done"
+        },
+        {
+          "id": "T-005-4",
+          "title": "Implement REST endpoints for task management",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Database Migration to PostgreSQL",
+      "description": "As a developer, I want to use PostgreSQL in production so that data is persisted reliably",
+      "priority": "high",
+      "status": "todo",
+      "story_points": 3,
+      "tasks": [
+        {
+          "id": "T-006-1",
+          "title": "Set up PostgreSQL configuration for production",
+          "status": "done"
+        },
+        {
+          "id": "T-006-2",
+          "title": "Create database migration scripts",
+          "status": "todo"
+        },
+        {
+          "id": "T-006-3",
+          "title": "Test Docker compose with PostgreSQL",
+          "status": "todo"
+        },
+        {
+          "id": "T-006-4",
+          "title": "Add data seeding for development",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-007",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Visit Summary API",
+      "description": "As a patient, I want to view summaries of my home care visits so that I can track my care history",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Visit summaries are linked to appointments",
+        "Summaries include notes, recommendations, and medications",
+        "Patients can view their visit history",
+        "Staff can create and edit summaries"
+      ],
+      "tasks": [
+        {
+          "id": "T-007-1",
+          "title": "Create VisitSummary entity",
+          "status": "done"
+        },
+        {
+          "id": "T-007-2",
+          "title": "Implement VisitSummaryRepository",
+          "status": "done"
+        },
+        {
+          "id": "T-007-3",
+          "title": "Create VisitSummaryService",
+          "status": "todo"
+        },
+        {
+          "id": "T-007-4",
+          "title": "Implement REST endpoints",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-008",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Hospital Staff Account Management",
+      "description": "As an admin, I want to create and manage hospital staff accounts so that doctors and nurses can access the system",
+      "priority": "high",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Admin can create doctor and nurse accounts",
+        "Staff profiles include specialization and department",
+        "Staff can update their availability",
+        "Admin can deactivate staff accounts"
+      ],
+      "tasks": [
+        {
+          "id": "T-008-1",
+          "title": "Extend User entity with staff-specific fields",
+          "status": "todo"
+        },
+        {
+          "id": "T-008-2",
+          "title": "Create StaffProfile entity for additional info",
+          "status": "todo"
+        },
+        {
+          "id": "T-008-3",
+          "title": "Implement staff management service",
+          "status": "todo"
+        },
+        {
+          "id": "T-008-4",
+          "title": "Create admin endpoints for staff management",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-009",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Staff Availability Management",
+      "description": "As a hospital staff member, I want to set my availability so that appointments can be scheduled appropriately",
+      "priority": "high",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Staff can set weekly availability schedule",
+        "Staff can mark time-off periods",
+        "System prevents scheduling during unavailable times",
+        "Availability is visible to scheduling system"
+      ],
+      "tasks": [
+        {
+          "id": "T-009-1",
+          "title": "Create StaffAvailability entity",
+          "status": "todo"
+        },
+        {
+          "id": "T-009-2",
+          "title": "Implement availability CRUD operations",
+          "status": "todo"
+        },
+        {
+          "id": "T-009-3",
+          "title": "Create time-off request functionality",
+          "status": "todo"
+        },
+        {
+          "id": "T-009-4",
+          "title": "Integrate with appointment scheduling",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-010",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Appointment Scheduling Workflow",
+      "description": "As hospital staff, I want to schedule home visits efficiently so that patients receive timely care",
+      "priority": "high",
+      "status": "todo",
+      "story_points": 8,
+      "acceptance_criteria": [
+        "Staff can view available time slots",
+        "System suggests optimal scheduling based on location and availability",
+        "Appointments can be assigned to specific staff members",
+        "Conflicts are detected and prevented"
+      ],
+      "tasks": [
+        {
+          "id": "T-010-1",
+          "title": "Create scheduling algorithm for optimal slot selection",
+          "status": "todo"
+        },
+        {
+          "id": "T-010-2",
+          "title": "Implement conflict detection logic",
+          "status": "todo"
+        },
+        {
+          "id": "T-010-3",
+          "title": "Create available slots endpoint",
+          "status": "todo"
+        },
+        {
+          "id": "T-010-4",
+          "title": "Add batch scheduling capability",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-011",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Appointment Rescheduling Requests",
+      "description": "As a patient or family member, I want to request appointment changes so that I can manage my schedule",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Patients can request to reschedule appointments",
+        "Requests include preferred alternative times",
+        "Staff receives notifications of requests",
+        "Staff can approve or suggest alternatives"
+      ],
+      "tasks": [
+        {
+          "id": "T-011-1",
+          "title": "Create RescheduleRequest entity",
+          "status": "todo"
+        },
+        {
+          "id": "T-011-2",
+          "title": "Implement request submission endpoint",
+          "status": "todo"
+        },
+        {
+          "id": "T-011-3",
+          "title": "Create staff approval workflow",
+          "status": "todo"
+        },
+        {
+          "id": "T-011-4",
+          "title": "Add notification triggers",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-012",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Emergency Case Handling",
+      "description": "As hospital staff, I want to handle emergency cases so that urgent patient needs are addressed",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Staff can create emergency appointments",
+        "Emergency cases can override regular scheduling",
+        "Affected patients are notified of changes",
+        "Emergency cases are flagged in the system"
+      ],
+      "tasks": [
+        {
+          "id": "T-012-1",
+          "title": "Add emergency flag to appointments",
+          "status": "todo"
+        },
+        {
+          "id": "T-012-2",
+          "title": "Implement emergency scheduling override logic",
+          "status": "todo"
+        },
+        {
+          "id": "T-012-3",
+          "title": "Create affected appointment notification system",
+          "status": "todo"
+        },
+        {
+          "id": "T-012-4",
+          "title": "Add emergency case dashboard for staff",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-013",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Staff Dashboard",
+      "description": "As hospital staff, I want a dashboard view so that I can see my daily schedule and tasks",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Dashboard shows today's appointments",
+        "Pending tasks and requests are visible",
+        "Quick actions for common operations",
+        "Patient summary accessible from dashboard"
+      ],
+      "tasks": [
+        {
+          "id": "T-013-1",
+          "title": "Create dashboard data aggregation endpoint",
+          "status": "todo"
+        },
+        {
+          "id": "T-013-2",
+          "title": "Implement daily schedule endpoint",
+          "status": "todo"
+        },
+        {
+          "id": "T-013-3",
+          "title": "Create pending items summary endpoint",
+          "status": "todo"
+        },
+        {
+          "id": "T-013-4",
+          "title": "Add statistics and metrics endpoints",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-014",
+      "epic_id": "E2",
+      "type": "user_story",
+      "title": "Patient-Family Linking",
+      "description": "As a family member, I want to be linked to my patient so that I can view their care information",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Family members can request to link with a patient",
+        "Patients can approve family member access",
+        "Linked family members can view appointments and tasks",
+        "Access can be revoked at any time"
+      ],
+      "tasks": [
+        {
+          "id": "T-014-1",
+          "title": "Create PatientFamilyLink entity",
+          "status": "todo"
+        },
+        {
+          "id": "T-014-2",
+          "title": "Implement link request workflow",
+          "status": "todo"
+        },
+        {
+          "id": "T-014-3",
+          "title": "Add permission checking for family access",
+          "status": "todo"
+        },
+        {
+          "id": "T-014-4",
+          "title": "Create link management endpoints",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-015",
+      "epic_id": "E3",
+      "type": "user_story",
+      "title": "User Flow Evaluation and Refinement",
+      "description": "As a user, I want intuitive navigation so that I can easily find what I need",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Current user flows are documented",
+        "Usability issues are identified",
+        "Navigation is simplified where needed",
+        "Key actions require fewer taps"
+      ],
+      "tasks": [
+        {
+          "id": "T-015-1",
+          "title": "Document current user flows",
+          "status": "todo"
+        },
+        {
+          "id": "T-015-2",
+          "title": "Conduct usability evaluation",
+          "status": "todo"
+        },
+        {
+          "id": "T-015-3",
+          "title": "Identify and prioritize improvements",
+          "status": "todo"
+        },
+        {
+          "id": "T-015-4",
+          "title": "Implement navigation improvements",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-016",
+      "epic_id": "E3",
+      "type": "user_story",
+      "title": "Visual Hierarchy Improvements",
+      "description": "As a user, I want clear visual design so that I can easily understand the interface",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 3,
+      "acceptance_criteria": [
+        "Font sizes are consistent and readable",
+        "Spacing follows design system",
+        "Colors provide clear hierarchy",
+        "Important actions are visually prominent"
+      ],
+      "tasks": [
+        {
+          "id": "T-016-1",
+          "title": "Audit current typography and spacing",
+          "status": "todo"
+        },
+        {
+          "id": "T-016-2",
+          "title": "Create/update design system tokens",
+          "status": "todo"
+        },
+        {
+          "id": "T-016-3",
+          "title": "Implement consistent styling across screens",
+          "status": "todo"
+        },
+        {
+          "id": "T-016-4",
+          "title": "Improve button and action visibility",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-017",
+      "epic_id": "E3",
+      "type": "user_story",
+      "title": "Local Push Notifications",
+      "description": "As a patient, I want to receive notifications so that I don't miss appointments or tasks",
+      "priority": "high",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Notifications for upcoming appointments",
+        "Reminders for pending care tasks",
+        "Notifications are customizable",
+        "Do-not-disturb times respected"
+      ],
+      "tasks": [
+        {
+          "id": "T-017-1",
+          "title": "Set up Expo notifications",
+          "status": "todo"
+        },
+        {
+          "id": "T-017-2",
+          "title": "Implement appointment reminder notifications",
+          "status": "todo"
+        },
+        {
+          "id": "T-017-3",
+          "title": "Add task reminder notifications",
+          "status": "todo"
+        },
+        {
+          "id": "T-017-4",
+          "title": "Create notification settings screen",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-018",
+      "epic_id": "E3",
+      "type": "user_story",
+      "title": "Accessibility Improvements",
+      "description": "As a user with accessibility needs, I want the app to be usable so that I can access my healthcare information",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 5,
+      "acceptance_criteria": [
+        "Screen reader support implemented",
+        "Sufficient color contrast ratios",
+        "Touch targets are appropriately sized",
+        "Text can be scaled without breaking layout"
+      ],
+      "tasks": [
+        {
+          "id": "T-018-1",
+          "title": "Add accessibility labels to components",
+          "status": "todo"
+        },
+        {
+          "id": "T-018-2",
+          "title": "Audit and fix color contrast issues",
+          "status": "todo"
+        },
+        {
+          "id": "T-018-3",
+          "title": "Ensure minimum touch target sizes",
+          "status": "todo"
+        },
+        {
+          "id": "T-018-4",
+          "title": "Test and fix dynamic text scaling",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-019",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Connect Frontend to Backend",
+      "description": "As a developer, I want the React Native app to communicate with the Spring Boot backend so that data is persisted",
+      "priority": "high",
+      "status": "todo",
+      "story_points": 8,
+      "acceptance_criteria": [
+        "API service layer created in frontend",
+        "Authentication flow connected to backend",
+        "Appointments sync with backend",
+        "Care tasks sync with backend"
+      ],
+      "tasks": [
+        {
+          "id": "T-019-1",
+          "title": "Create API client configuration",
+          "status": "todo"
+        },
+        {
+          "id": "T-019-2",
+          "title": "Implement authentication service",
+          "status": "todo"
+        },
+        {
+          "id": "T-019-3",
+          "title": "Connect appointment screens to API",
+          "status": "todo"
+        },
+        {
+          "id": "T-019-4",
+          "title": "Connect care task screens to API",
+          "status": "todo"
+        },
+        {
+          "id": "T-019-5",
+          "title": "Add error handling and loading states",
+          "status": "todo"
+        }
+      ]
+    },
+    {
+      "id": "US-020",
+      "epic_id": "E1",
+      "type": "user_story",
+      "title": "Chat/Messaging API",
+      "description": "As a patient, I want to communicate with hospital staff so that I can ask questions about my care",
+      "priority": "medium",
+      "status": "todo",
+      "story_points": 8,
+      "acceptance_criteria": [
+        "Messages are stored and retrieved from backend",
+        "Real-time or near-real-time message delivery",
+        "Message history is preserved",
+        "Unread message indicators work correctly"
+      ],
+      "tasks": [
+        {
+          "id": "T-020-1",
+          "title": "Create Message and Conversation entities",
+          "status": "todo"
+        },
+        {
+          "id": "T-020-2",
+          "title": "Implement message repository and service",
+          "status": "todo"
+        },
+        {
+          "id": "T-020-3",
+          "title": "Create REST endpoints for messaging",
+          "status": "todo"
+        },
+        {
+          "id": "T-020-4",
+          "title": "Connect frontend ChatScreen to backend",
+          "status": "todo"
+        }
+      ]
+    }
+  ],
+  "sprints": [
+    {
+      "id": "Sprint-1",
+      "name": "Backend Foundation",
+      "goal": "Complete backend setup and core API functionality",
+      "status": "in_progress",
+      "user_stories": ["US-001", "US-002", "US-003", "US-004", "US-005"]
+    },
+    {
+      "id": "Sprint-2",
+      "name": "Data Persistence and Integration",
+      "goal": "Set up PostgreSQL and connect frontend to backend",
+      "status": "planned",
+      "user_stories": ["US-006", "US-007", "US-019"]
+    },
+    {
+      "id": "Sprint-3",
+      "name": "Hospital Staff Features",
+      "goal": "Implement staff management and scheduling",
+      "status": "planned",
+      "user_stories": ["US-008", "US-009", "US-010"]
+    },
+    {
+      "id": "Sprint-4",
+      "name": "Advanced Scheduling",
+      "goal": "Implement rescheduling, emergency handling, and patient-family linking",
+      "status": "planned",
+      "user_stories": ["US-011", "US-012", "US-014"]
+    },
+    {
+      "id": "Sprint-5",
+      "name": "UI/UX and Notifications",
+      "goal": "Improve user experience and implement notifications",
+      "status": "planned",
+      "user_stories": ["US-015", "US-016", "US-017"]
+    },
+    {
+      "id": "Sprint-6",
+      "name": "Polish and Accessibility",
+      "goal": "Final improvements and accessibility compliance",
+      "status": "planned",
+      "user_stories": ["US-013", "US-018", "US-020"]
+    }
+  ],
+  "summary": {
+    "total_user_stories": 20,
+    "total_story_points": 101,
+    "done": 5,
+    "in_progress": 0,
+    "todo": 15,
+    "epics_count": 3
+  }
+}
