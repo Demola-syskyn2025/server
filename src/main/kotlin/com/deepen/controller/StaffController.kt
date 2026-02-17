@@ -4,6 +4,7 @@ import com.deepen.dto.*
 import com.deepen.service.StaffAvailabilityService
 import com.deepen.service.StaffProfileService
 import com.deepen.service.TimeOffService
+import com.deepen.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -16,8 +17,15 @@ import org.springframework.web.bind.annotation.*
 class StaffController(
     private val staffProfileService: StaffProfileService,
     private val staffAvailabilityService: StaffAvailabilityService,
-    private val timeOffService: TimeOffService
+    private val timeOffService: TimeOffService,
+    private val userService: UserService
 ) {
+
+    private fun getUserId(authentication: Authentication): Long {
+        val email = authentication.name
+        return userService.findByEmail(email)?.id
+            ?: throw IllegalArgumentException("User not found")
+    }
 
     // ========== Staff Profile ==========
 
@@ -33,7 +41,7 @@ class StaffController(
         @RequestBody request: CreateStaffProfileRequest,
         authentication: Authentication
     ): ResponseEntity<StaffProfileDto> {
-        val userId = authentication.name.toLong()
+        val userId = getUserId(authentication)
         val profile = staffProfileService.createProfile(userId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(staffProfileService.toDto(profile))
     }
@@ -43,7 +51,7 @@ class StaffController(
         @RequestBody request: UpdateStaffProfileRequest,
         authentication: Authentication
     ): ResponseEntity<StaffProfileDto> {
-        val userId = authentication.name.toLong()
+        val userId = getUserId(authentication)
         val profile = staffProfileService.updateProfile(userId, request)
         return ResponseEntity.ok(staffProfileService.toDto(profile))
     }
@@ -61,7 +69,7 @@ class StaffController(
         @RequestBody request: SetAvailabilityRequest,
         authentication: Authentication
     ): ResponseEntity<StaffAvailabilityDto> {
-        val staffId = authentication.name.toLong()
+        val staffId = getUserId(authentication)
         val availability = staffAvailabilityService.setAvailability(staffId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(staffAvailabilityService.toDto(availability))
     }
@@ -71,7 +79,7 @@ class StaffController(
         @RequestBody request: BulkSetAvailabilityRequest,
         authentication: Authentication
     ): ResponseEntity<List<StaffAvailabilityDto>> {
-        val staffId = authentication.name.toLong()
+        val staffId = getUserId(authentication)
         val availability = staffAvailabilityService.bulkSetAvailability(staffId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(availability.map { staffAvailabilityService.toDto(it) })
     }
@@ -86,7 +94,7 @@ class StaffController(
 
     @GetMapping("/time-off")
     fun getMyTimeOff(authentication: Authentication): ResponseEntity<List<TimeOffRequestDto>> {
-        val staffId = authentication.name.toLong()
+        val staffId = getUserId(authentication)
         val requests = timeOffService.findByStaffId(staffId)
         return ResponseEntity.ok(requests.map { timeOffService.toDto(it) })
     }
@@ -102,7 +110,7 @@ class StaffController(
         @RequestBody request: CreateTimeOffRequest,
         authentication: Authentication
     ): ResponseEntity<TimeOffRequestDto> {
-        val staffId = authentication.name.toLong()
+        val staffId = getUserId(authentication)
         val timeOff = timeOffService.createRequest(staffId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(timeOffService.toDto(timeOff))
     }
@@ -113,7 +121,7 @@ class StaffController(
         @RequestBody request: ReviewTimeOffRequest,
         authentication: Authentication
     ): ResponseEntity<TimeOffRequestDto> {
-        val reviewerId = authentication.name.toLong()
+        val reviewerId = getUserId(authentication)
         val timeOff = timeOffService.reviewRequest(id, reviewerId, request)
         return ResponseEntity.ok(timeOffService.toDto(timeOff))
     }
