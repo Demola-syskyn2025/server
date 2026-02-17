@@ -4,6 +4,7 @@ import com.deepen.dto.AppointmentDto
 import com.deepen.dto.CreateAppointmentRequest
 import com.deepen.dto.UpdateAppointmentRequest
 import com.deepen.service.AppointmentService
+import com.deepen.service.SchedulingValidationService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -13,7 +14,8 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/api/appointments")
 class AppointmentController(
-    private val appointmentService: AppointmentService
+    private val appointmentService: AppointmentService,
+    private val schedulingValidationService: SchedulingValidationService
 ) {
     
     @GetMapping("/{id}")
@@ -45,9 +47,30 @@ class AppointmentController(
         return ResponseEntity.ok(appointments.map { appointmentService.toDto(it) })
     }
     
+    @PostMapping("/validate")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    fun validateAppointment(@RequestBody request: CreateAppointmentRequest): ResponseEntity<Map<String, Any>> {
+        val result = schedulingValidationService.validateAppointment(
+            staffId = request.staffId,
+            patientId = request.patientId,
+            scheduledAt = request.scheduledAt,
+            durationMinutes = request.estimatedDurationMinutes
+        )
+        return ResponseEntity.ok(mapOf("valid" to result.valid, "errors" to result.errors))
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
-    fun createAppointment(@RequestBody request: CreateAppointmentRequest): ResponseEntity<AppointmentDto> {
+    fun createAppointment(@RequestBody request: CreateAppointmentRequest): ResponseEntity<Any> {
+        val validation = schedulingValidationService.validateAppointment(
+            staffId = request.staffId,
+            patientId = request.patientId,
+            scheduledAt = request.scheduledAt,
+            durationMinutes = request.estimatedDurationMinutes
+        )
+        if (!validation.valid) {
+            return ResponseEntity.badRequest().body(mapOf("errors" to validation.errors))
+        }
         val appointment = appointmentService.createAppointment(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(appointmentService.toDto(appointment))
     }

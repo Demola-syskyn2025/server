@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Configuration
 @Profile("dev", "default")
@@ -20,6 +21,11 @@ class DataSeeder {
         appointmentRepository: AppointmentRepository,
         careTaskRepository: CareTaskRepository,
         visitSummaryRepository: VisitSummaryRepository,
+        careAssignmentRepository: CareAssignmentRepository,
+        staffProfileRepository: StaffProfileRepository,
+        staffAvailabilityRepository: StaffAvailabilityRepository,
+        timeOffRequestRepository: TimeOffRequestRepository,
+        rescheduleRequestRepository: RescheduleRequestRepository,
         passwordEncoder: PasswordEncoder
     ): CommandLineRunner = CommandLineRunner {
 
@@ -206,11 +212,101 @@ class DataSeeder {
             )
         )
 
+        // --- Staff Profiles ---
+        staffProfileRepository.save(
+            StaffProfile(
+                user = doctor,
+                department = "Home Care",
+                specialization = "General Practice",
+                licenseNumber = "FI-DOC-2020-1234",
+                hireDate = LocalDate.of(2020, 3, 15)
+            )
+        )
+
+        staffProfileRepository.save(
+            StaffProfile(
+                user = nurse,
+                department = "Home Care",
+                specialization = "Wound Care & Patient Monitoring",
+                licenseNumber = "FI-NUR-2019-5678",
+                hireDate = LocalDate.of(2019, 8, 1)
+            )
+        )
+
+        // --- Care Assignments ---
+        careAssignmentRepository.save(
+            CareAssignment(patient = patient1, staff = doctor, isPrimary = true)
+        )
+        careAssignmentRepository.save(
+            CareAssignment(patient = patient1, staff = nurse, isPrimary = true)
+        )
+        careAssignmentRepository.save(
+            CareAssignment(patient = patient2, staff = doctor, isPrimary = true)
+        )
+        careAssignmentRepository.save(
+            CareAssignment(patient = patient2, staff = nurse, isPrimary = true)
+        )
+
+        // --- Staff Availability (Doctor: Mon-Fri 09:00-16:00) ---
+        for (day in 1..5) { // Monday=1 to Friday=5
+            staffAvailabilityRepository.save(
+                StaffAvailability(
+                    staff = doctor,
+                    dayOfWeek = day,
+                    startTime = LocalTime.of(9, 0),
+                    endTime = LocalTime.of(16, 0),
+                    isAvailable = true
+                )
+            )
+        }
+
+        // --- Staff Availability (Nurse: Mon-Fri 08:00-15:00) ---
+        for (day in 1..5) {
+            staffAvailabilityRepository.save(
+                StaffAvailability(
+                    staff = nurse,
+                    dayOfWeek = day,
+                    startTime = LocalTime.of(8, 0),
+                    endTime = LocalTime.of(15, 0),
+                    isAvailable = true
+                )
+            )
+        }
+
+        // --- Time Off Request (Nurse requesting next Friday off) ---
+        val nextFriday = LocalDate.now().plusWeeks(1).with(java.time.DayOfWeek.FRIDAY)
+        timeOffRequestRepository.save(
+            TimeOffRequest(
+                staff = nurse,
+                startDate = nextFriday,
+                endDate = nextFriday,
+                reason = "Personal appointment",
+                status = TimeOffStatus.PENDING
+            )
+        )
+
+        // --- Reschedule Request (Patient requests to move appointment) ---
+        rescheduleRequestRepository.save(
+            RescheduleRequest(
+                appointment = appointment2,
+                requestedBy = patient1,
+                reason = "I have a hospital visit at that time",
+                preferredDate1 = LocalDateTime.now().plusDays(6).withHour(10).withMinute(0),
+                preferredDate2 = LocalDateTime.now().plusDays(7).withHour(14).withMinute(0),
+                status = RescheduleStatus.PENDING
+            )
+        )
+
         println("=== Development data seeded successfully ===")
         println("Users: ${userRepository.count()}")
         println("Appointments: ${appointmentRepository.count()}")
         println("Care Tasks: ${careTaskRepository.count()}")
         println("Visit Summaries: ${visitSummaryRepository.count()}")
+        println("Care Assignments: ${careAssignmentRepository.count()}")
+        println("Staff Profiles: ${staffProfileRepository.count()}")
+        println("Staff Availability Slots: ${staffAvailabilityRepository.count()}")
+        println("Time Off Requests: ${timeOffRequestRepository.count()}")
+        println("Reschedule Requests: ${rescheduleRequestRepository.count()}")
         println("============================================")
         println("Test accounts:")
         println("  Doctor:  dr.smith@hospital.fi / password123")

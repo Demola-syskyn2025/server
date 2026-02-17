@@ -17,6 +17,8 @@ class AppointmentService(
 ) {
     
     fun findById(id: Long): Appointment? = appointmentRepository.findById(id).orElse(null)
+
+    fun saveAppointment(appointment: Appointment): Appointment = appointmentRepository.save(appointment)
     
     fun findByPatientId(patientId: Long): List<Appointment> = appointmentRepository.findByPatientId(patientId)
     
