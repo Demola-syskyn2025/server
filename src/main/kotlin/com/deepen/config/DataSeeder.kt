@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.security.crypto.password.PasswordEncoder
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Configuration
@@ -113,7 +114,7 @@ class DataSeeder {
                 staff = doctor,
                 scheduledAt = LocalDateTime.now().plusDays(3).withHour(11).withMinute(30),
                 estimatedDurationMinutes = 30,
-                type = AppointmentType.VIDEO_CALL,
+                type = AppointmentType.TELECONSULTATION,
                 status = AppointmentStatus.CONFIRMED,
                 notes = "Medication review"
             )
@@ -150,7 +151,8 @@ class DataSeeder {
                 patient = patient1,
                 title = "Take morning medication",
                 description = "Paracetamol 500mg with breakfast",
-                dueDate = LocalDateTime.now().plusDays(1).withHour(8).withMinute(0),
+                dueDate = LocalDate.now().plusDays(1),
+                dueTime = "08:00",
                 status = TaskStatus.PENDING,
                 frequency = TaskFrequency.DAILY
             )
@@ -161,7 +163,8 @@ class DataSeeder {
                 patient = patient1,
                 title = "Blood pressure measurement",
                 description = "Measure and record blood pressure. Report if above 140/90.",
-                dueDate = LocalDateTime.now().plusDays(1).withHour(9).withMinute(0),
+                dueDate = LocalDate.now().plusDays(1),
+                dueTime = "09:00",
                 status = TaskStatus.PENDING,
                 frequency = TaskFrequency.DAILY
             )
@@ -172,7 +175,8 @@ class DataSeeder {
                 patient = patient1,
                 title = "Light walking exercise",
                 description = "15 minute walk around the neighbourhood",
-                dueDate = LocalDateTime.now().plusDays(1).withHour(16).withMinute(0),
+                dueDate = LocalDate.now().plusDays(1),
+                dueTime = "16:00",
                 status = TaskStatus.PENDING,
                 frequency = TaskFrequency.DAILY
             )
@@ -183,7 +187,8 @@ class DataSeeder {
                 patient = patient2,
                 title = "Take evening medication",
                 description = "Insulin injection before dinner",
-                dueDate = LocalDateTime.now().plusDays(1).withHour(18).withMinute(0),
+                dueDate = LocalDate.now().plusDays(1),
+                dueTime = "18:00",
                 status = TaskStatus.PENDING,
                 frequency = TaskFrequency.DAILY
             )
@@ -194,7 +199,8 @@ class DataSeeder {
                 patient = patient2,
                 title = "Blood sugar check",
                 description = "Check blood sugar level and log result",
-                dueDate = LocalDateTime.now().plusDays(1).withHour(7).withMinute(0),
+                dueDate = LocalDate.now().plusDays(1),
+                dueTime = "07:00",
                 status = TaskStatus.PENDING,
                 frequency = TaskFrequency.DAILY
             )
