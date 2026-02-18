@@ -1,6 +1,7 @@
 package com.deepen.model
 
 import jakarta.persistence.*
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 enum class AppointmentStatus {
@@ -16,6 +17,12 @@ enum class AppointmentType {
     HOME_VISIT,
     HOSPITAL_VISIT,
     TELECONSULTATION
+}
+
+enum class RecurringFrequency {
+    WEEKLY,
+    BIWEEKLY,
+    MONTHLY
 }
 
 @Entity
@@ -51,6 +58,14 @@ data class Appointment(
     val notes: String? = null,
     
     val location: String? = null,
+
+    // Recurring appointment fields
+    val recurringGroupId: String? = null,
+
+    @Enumerated(EnumType.STRING)
+    val recurringFrequency: RecurringFrequency? = null,
+
+    val recurringEndDate: LocalDate? = null,
     
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

@@ -285,6 +285,53 @@ class DataSeeder {
             )
         )
 
+        // --- Recurring Appointments ---
+        // Nurse visits patient1 weekly (wound care) for the next 4 weeks
+        val nurseRecurringGroupId = java.util.UUID.randomUUID().toString()
+        val nurseRecurringEnd = LocalDate.now().plusWeeks(4)
+        var nurseVisitDate = LocalDateTime.now().plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0)
+        while (!nurseVisitDate.toLocalDate().isAfter(nurseRecurringEnd)) {
+            appointmentRepository.save(
+                Appointment(
+                    patient = patient1,
+                    staff = nurse,
+                    scheduledAt = nurseVisitDate,
+                    estimatedDurationMinutes = 30,
+                    type = AppointmentType.HOME_VISIT,
+                    status = AppointmentStatus.SCHEDULED,
+                    notes = "Weekly wound care",
+                    location = "Patient home - Oulu",
+                    recurringGroupId = nurseRecurringGroupId,
+                    recurringFrequency = RecurringFrequency.WEEKLY,
+                    recurringEndDate = nurseRecurringEnd
+                )
+            )
+            nurseVisitDate = nurseVisitDate.plusWeeks(1)
+        }
+
+        // Doctor visits patient2 biweekly (diabetes management) for 2 months
+        val doctorRecurringGroupId = java.util.UUID.randomUUID().toString()
+        val doctorRecurringEnd = LocalDate.now().plusMonths(2)
+        var doctorVisitDate = LocalDateTime.now().plusDays(3).withHour(11).withMinute(0).withSecond(0).withNano(0)
+        while (!doctorVisitDate.toLocalDate().isAfter(doctorRecurringEnd)) {
+            appointmentRepository.save(
+                Appointment(
+                    patient = patient2,
+                    staff = doctor,
+                    scheduledAt = doctorVisitDate,
+                    estimatedDurationMinutes = 30,
+                    type = AppointmentType.HOME_VISIT,
+                    status = AppointmentStatus.SCHEDULED,
+                    notes = "Biweekly diabetes management checkup",
+                    location = "Patient home - Oulu",
+                    recurringGroupId = doctorRecurringGroupId,
+                    recurringFrequency = RecurringFrequency.BIWEEKLY,
+                    recurringEndDate = doctorRecurringEnd
+                )
+            )
+            doctorVisitDate = doctorVisitDate.plusWeeks(2)
+        }
+
         // --- Reschedule Request (Patient requests to move appointment) ---
         rescheduleRequestRepository.save(
             RescheduleRequest(

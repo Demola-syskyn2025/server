@@ -21,4 +21,6 @@ interface AppointmentRepository : JpaRepository<Appointment, Long> {
     
     @Query("SELECT a FROM Appointment a WHERE a.scheduledAt >= :startDate AND a.scheduledAt <= :endDate")
     fun findByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): List<Appointment>
+
+    fun findByRecurringGroupId(recurringGroupId: String): List<Appointment>
 }
