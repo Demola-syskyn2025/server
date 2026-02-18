@@ -5,6 +5,7 @@ import com.deepen.service.AppointmentService
 import com.deepen.service.ScheduleSuggestionService
 import com.deepen.service.SchedulingValidationService
 import com.deepen.service.ConflictResolutionService
+import com.deepen.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -19,7 +20,8 @@ class AppointmentController(
     private val appointmentService: AppointmentService,
     private val schedulingValidationService: SchedulingValidationService,
     private val scheduleSuggestionService: ScheduleSuggestionService,
-    private val conflictResolutionService: ConflictResolutionService
+    private val conflictResolutionService: ConflictResolutionService,
+    private val userService: UserService
 ) {
     
     @GetMapping("/{id}")
@@ -72,18 +74,33 @@ class AppointmentController(
 
     @PostMapping
     @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
-    fun createAppointment(@RequestBody request: CreateAppointmentRequest): ResponseEntity<Any> {
-        val validation = schedulingValidationService.validateAppointment(
+    fun createAppointment(@RequestBody request: CreateAppointmentRequest): ResponseEntity<AppointmentCreationResponse> {
+        // Check for conflicts using the enhanced conflict resolution service
+        val availabilityRequest = AvailabilityCheckRequest(
             staffId = request.staffId,
             patientId = request.patientId,
             scheduledAt = request.scheduledAt,
             durationMinutes = request.estimatedDurationMinutes
         )
-        if (!validation.valid) {
-            return ResponseEntity.badRequest().body(mapOf("errors" to validation.errors))
+        
+        val availabilityCheck = conflictResolutionService.checkAvailability(availabilityRequest)
+        
+        if (!availabilityCheck.isAvailable) {
+            return ResponseEntity.ok(AppointmentCreationResponse(
+                success = false,
+                conflicts = availabilityCheck.conflicts,
+                alternativeTimes = availabilityCheck.alternativeTimes,
+                message = "Appointment conflicts detected. Please choose an alternative time."
+            ))
         }
+        
+        // No conflicts, create the appointment
         val appointment = appointmentService.createAppointment(request)
-        return ResponseEntity.status(HttpStatus.CREATED).body(appointmentService.toDto(appointment))
+        return ResponseEntity.status(HttpStatus.CREATED).body(AppointmentCreationResponse(
+            success = true,
+            appointment = appointmentService.toDto(appointment),
+            message = "Appointment created successfully"
+        ))
     }
 
     @PostMapping("/recurring")
@@ -151,30 +168,57 @@ class AppointmentController(
 
     @PostMapping("/batch")
     @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
-    fun batchCreateAppointments(@RequestBody request: BatchCreateAppointmentRequest): ResponseEntity<Any> {
+    fun batchCreateAppointments(@RequestBody request: BatchCreateAppointmentRequest): ResponseEntity<BatchCreationWithConflictsResponse> {
         val created = mutableListOf<AppointmentDto>()
-        val errors = mutableListOf<Map<String, Any>>()
+        val conflicts = mutableListOf<AppointmentConflict>()
 
         for ((index, apptRequest) in request.appointments.withIndex()) {
-            val validation = schedulingValidationService.validateAppointment(
+            // Check for conflicts using the enhanced conflict resolution service
+            val availabilityRequest = AvailabilityCheckRequest(
                 staffId = apptRequest.staffId,
                 patientId = apptRequest.patientId,
                 scheduledAt = apptRequest.scheduledAt,
                 durationMinutes = apptRequest.estimatedDurationMinutes
             )
-            if (!validation.valid) {
-                errors.add(mapOf("index" to index, "errors" to validation.errors))
+            
+            val availabilityCheck = conflictResolutionService.checkAvailability(availabilityRequest)
+            
+            if (!availabilityCheck.isAvailable) {
+                // Get patient name for the conflict response
+                val patient = userService.findById(apptRequest.patientId)
+                val patientName = if (patient != null) "${patient.firstName} ${patient.lastName}" else "Unknown Patient"
+                
+                conflicts.add(AppointmentConflict(
+                    index = index,
+                    patientId = apptRequest.patientId,
+                    patientName = patientName,
+                    requestedTime = apptRequest.scheduledAt,
+                    conflicts = availabilityCheck.conflicts,
+                    alternativeTimes = availabilityCheck.alternativeTimes
+                ))
                 continue
             }
+            
+            // No conflicts, create the appointment
             val appointment = appointmentService.createAppointment(apptRequest)
             created.add(appointmentService.toDto(appointment))
         }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapOf(
-            "created" to created,
-            "errors" to errors,
-            "totalCreated" to created.size,
-            "totalErrors" to errors.size
+        val message = if (conflicts.isEmpty()) {
+            "All appointments created successfully"
+        } else if (created.isEmpty()) {
+            "All appointments had conflicts. Please review and reschedule."
+        } else {
+            "Created ${created.size} appointments. ${conflicts.size} appointments had conflicts."
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(BatchCreationWithConflictsResponse(
+            totalRequested = request.appointments.size,
+            totalCreated = created.size,
+            totalConflicts = conflicts.size,
+            created = created,
+            conflicts = conflicts,
+            message = message
         ))
     }
 }
