@@ -4,6 +4,7 @@ import com.deepen.dto.*
 import com.deepen.service.AppointmentService
 import com.deepen.service.ScheduleSuggestionService
 import com.deepen.service.SchedulingValidationService
+import com.deepen.service.ConflictResolutionService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -17,7 +18,8 @@ import java.time.LocalDateTime
 class AppointmentController(
     private val appointmentService: AppointmentService,
     private val schedulingValidationService: SchedulingValidationService,
-    private val scheduleSuggestionService: ScheduleSuggestionService
+    private val scheduleSuggestionService: ScheduleSuggestionService,
+    private val conflictResolutionService: ConflictResolutionService
 ) {
     
     @GetMapping("/{id}")
@@ -134,6 +136,15 @@ class AppointmentController(
     ): ResponseEntity<ScheduleSuggestionResponse> {
         val suggestion = scheduleSuggestionService.suggestSchedule(staffId, startDate, endDate)
         return ResponseEntity.ok(suggestion)
+    }
+
+    // ========== Conflict Resolution ==========
+
+    @PostMapping("/check-availability")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    fun checkAvailability(@RequestBody request: AvailabilityCheckRequest): ResponseEntity<AvailabilityCheckResponse> {
+        val response = conflictResolutionService.checkAvailability(request)
+        return ResponseEntity.ok(response)
     }
 
     // ========== Batch Create (confirm suggested schedule) ==========
