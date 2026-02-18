@@ -1,7 +1,7 @@
 -- ============================================
 -- Deepen Database Schema - V1
 -- Transparency for Patients at Home
--- PostgreSQL Schema Definition
+-- Complete schema with all features
 -- ============================================
 
 -- ============================================
@@ -32,49 +32,13 @@ CREATE TABLE staff_profiles (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
     department VARCHAR(100),
-    specialization VARCHAR(100),
+    specialization VARCHAR(200),
     license_number VARCHAR(50),
     hire_date DATE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_staff_profiles_user_id ON staff_profiles(user_id);
-
--- ============================================
--- PATIENT PROFILES
--- ============================================
-
-CREATE TABLE patient_profiles (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    date_of_birth DATE,
-    address VARCHAR(500),
-    emergency_contact_name VARCHAR(100),
-    emergency_contact_phone VARCHAR(20),
-    medical_notes TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_patient_profiles_user_id ON patient_profiles(user_id);
-
--- ============================================
--- PATIENT-FAMILY LINKING
--- ============================================
-
-CREATE TABLE patient_family_links (
-    id BIGSERIAL PRIMARY KEY,
-    patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    family_member_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    relationship VARCHAR(50),
-    access_level VARCHAR(20) DEFAULT 'VIEW' CHECK (access_level IN ('VIEW', 'MANAGE')),
-    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'REVOKED')),
-    requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    approved_at TIMESTAMP,
-    UNIQUE(patient_id, family_member_id)
-);
-
-CREATE INDEX idx_patient_family_links_patient ON patient_family_links(patient_id);
-CREATE INDEX idx_patient_family_links_family ON patient_family_links(family_member_id);
 
 -- ============================================
 -- STAFF AVAILABILITY
@@ -121,12 +85,14 @@ CREATE TABLE appointments (
     patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     staff_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     scheduled_at TIMESTAMP NOT NULL,
-    estimated_duration_minutes INT DEFAULT 30,
+    estimated_duration_minutes INT NOT NULL,
     type VARCHAR(20) NOT NULL CHECK (type IN ('HOME_VISIT', 'HOSPITAL_VISIT', 'TELECONSULTATION')),
     status VARCHAR(20) DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'RESCHEDULED')),
-    is_emergency BOOLEAN DEFAULT FALSE,
-    notes TEXT,
-    location VARCHAR(500),
+    notes VARCHAR(1000),
+    location VARCHAR(255),
+    recurring_group_id VARCHAR(255),
+    recurring_frequency VARCHAR(255) CHECK (recurring_frequency IN ('WEEKLY', 'BIWEEKLY', 'MONTHLY')),
+    recurring_end_date DATE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -135,6 +101,7 @@ CREATE INDEX idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX idx_appointments_staff ON appointments(staff_id);
 CREATE INDEX idx_appointments_scheduled ON appointments(scheduled_at);
 CREATE INDEX idx_appointments_status ON appointments(status);
+CREATE INDEX idx_appointments_recurring ON appointments(recurring_group_id);
 
 -- ============================================
 -- RESCHEDULE REQUESTS
@@ -145,9 +112,9 @@ CREATE TABLE reschedule_requests (
     appointment_id BIGINT NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
     requested_by BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     reason VARCHAR(500),
-    preferred_date_1 TIMESTAMP,
-    preferred_date_2 TIMESTAMP,
-    preferred_date_3 TIMESTAMP,
+    preferred_date1 TIMESTAMP,
+    preferred_date2 TIMESTAMP,
+    preferred_date3 TIMESTAMP,
     status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'ALTERNATIVE_OFFERED')),
     staff_response VARCHAR(500),
     new_scheduled_at TIMESTAMP,
@@ -165,14 +132,12 @@ CREATE INDEX idx_reschedule_status ON reschedule_requests(status);
 CREATE TABLE visit_summaries (
     id BIGSERIAL PRIMARY KEY,
     appointment_id BIGINT NOT NULL UNIQUE REFERENCES appointments(id) ON DELETE CASCADE,
-    summary TEXT NOT NULL,
-    recommendations TEXT,
-    medications TEXT,
-    vital_signs JSONB,
+    summary VARCHAR(2000) NOT NULL,
+    recommendations VARCHAR(1000),
+    medications VARCHAR(1000),
     next_visit_recommendation TIMESTAMP,
     created_by BIGINT NOT NULL REFERENCES users(id),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_visit_summaries_appointment ON visit_summaries(appointment_id);
@@ -185,14 +150,11 @@ CREATE TABLE care_tasks (
     id BIGSERIAL PRIMARY KEY,
     patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
-    description TEXT,
+    description VARCHAR(500),
     due_date DATE NOT NULL,
-    due_time TIME,
+    due_time VARCHAR(255),
     status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'SKIPPED')),
     frequency VARCHAR(20) DEFAULT 'ONCE' CHECK (frequency IN ('ONCE', 'DAILY', 'WEEKLY', 'MONTHLY')),
-    category VARCHAR(50),
-    priority VARCHAR(10) DEFAULT 'NORMAL' CHECK (priority IN ('LOW', 'NORMAL', 'HIGH')),
-    assigned_by BIGINT REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
 );
@@ -202,7 +164,44 @@ CREATE INDEX idx_care_tasks_due_date ON care_tasks(due_date);
 CREATE INDEX idx_care_tasks_status ON care_tasks(status);
 
 -- ============================================
--- CONVERSATIONS
+-- CARE ASSIGNMENTS
+-- ============================================
+
+CREATE TABLE care_assignments (
+    id BIGSERIAL PRIMARY KEY,
+    patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    staff_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    is_primary BOOLEAN NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(patient_id, staff_id)
+);
+
+CREATE INDEX idx_care_assignments_patient ON care_assignments(patient_id);
+CREATE INDEX idx_care_assignments_staff ON care_assignments(staff_id);
+
+-- ============================================
+-- PATIENT PREFERENCES
+-- ============================================
+
+CREATE TABLE patient_preferences (
+    id BIGSERIAL PRIMARY KEY,
+    patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    preferred_location VARCHAR(255),
+    preferred_visit_type SMALLINT CHECK (preferred_visit_type BETWEEN 0 AND 2),
+    preferred_day_of_week SMALLINT CHECK (preferred_day_of_week BETWEEN 0 AND 6),
+    preferred_time_start TIME,
+    preferred_time_end TIME,
+    avoid_mornings BOOLEAN DEFAULT FALSE,
+    avoid_evenings BOOLEAN DEFAULT FALSE,
+    notes VARCHAR(255),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE INDEX idx_patient_preferences_patient ON patient_preferences(patient_id);
+
+-- ============================================
+-- CONVERSATIONS (for Chat)
 -- ============================================
 
 CREATE TABLE conversations (
@@ -275,23 +274,3 @@ CREATE TABLE notification_settings (
 );
 
 CREATE INDEX idx_notification_settings_user ON notification_settings(user_id);
-
--- ============================================
--- AUDIT LOG
--- ============================================
-
-CREATE TABLE audit_log (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id),
-    action VARCHAR(50) NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id BIGINT NOT NULL,
-    old_values JSONB,
-    new_values JSONB,
-    ip_address VARCHAR(45),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_audit_log_user ON audit_log(user_id);
-CREATE INDEX idx_audit_log_entity ON audit_log(entity_type, entity_id);
-CREATE INDEX idx_audit_log_created ON audit_log(created_at);
