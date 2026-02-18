@@ -23,4 +23,6 @@ interface AppointmentRepository : JpaRepository<Appointment, Long> {
     fun findByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): List<Appointment>
 
     fun findByRecurringGroupId(recurringGroupId: String): List<Appointment>
+
+    fun findByPatientIdAndStaffId(patientId: Long, staffId: Long): List<Appointment>
 }

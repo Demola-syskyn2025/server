@@ -1,22 +1,23 @@
 package com.deepen.controller
 
-import com.deepen.dto.AppointmentDto
-import com.deepen.dto.CreateAppointmentRequest
-import com.deepen.dto.CreateRecurringAppointmentRequest
-import com.deepen.dto.UpdateAppointmentRequest
+import com.deepen.dto.*
 import com.deepen.service.AppointmentService
+import com.deepen.service.ScheduleSuggestionService
 import com.deepen.service.SchedulingValidationService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/appointments")
 class AppointmentController(
     private val appointmentService: AppointmentService,
-    private val schedulingValidationService: SchedulingValidationService
+    private val schedulingValidationService: SchedulingValidationService,
+    private val scheduleSuggestionService: ScheduleSuggestionService
 ) {
     
     @GetMapping("/{id}")
@@ -120,5 +121,49 @@ class AppointmentController(
     fun cancelAppointment(@PathVariable id: Long): ResponseEntity<AppointmentDto> {
         val appointment = appointmentService.cancelAppointment(id)
         return ResponseEntity.ok(appointmentService.toDto(appointment))
+    }
+
+    // ========== Schedule Suggestion ==========
+
+    @GetMapping("/suggest")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    fun suggestSchedule(
+        @RequestParam staffId: Long,
+        @RequestParam startDate: LocalDate,
+        @RequestParam endDate: LocalDate
+    ): ResponseEntity<ScheduleSuggestionResponse> {
+        val suggestion = scheduleSuggestionService.suggestSchedule(staffId, startDate, endDate)
+        return ResponseEntity.ok(suggestion)
+    }
+
+    // ========== Batch Create (confirm suggested schedule) ==========
+
+    @PostMapping("/batch")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    fun batchCreateAppointments(@RequestBody request: BatchCreateAppointmentRequest): ResponseEntity<Any> {
+        val created = mutableListOf<AppointmentDto>()
+        val errors = mutableListOf<Map<String, Any>>()
+
+        for ((index, apptRequest) in request.appointments.withIndex()) {
+            val validation = schedulingValidationService.validateAppointment(
+                staffId = apptRequest.staffId,
+                patientId = apptRequest.patientId,
+                scheduledAt = apptRequest.scheduledAt,
+                durationMinutes = apptRequest.estimatedDurationMinutes
+            )
+            if (!validation.valid) {
+                errors.add(mapOf("index" to index, "errors" to validation.errors))
+                continue
+            }
+            val appointment = appointmentService.createAppointment(apptRequest)
+            created.add(appointmentService.toDto(appointment))
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapOf(
+            "created" to created,
+            "errors" to errors,
+            "totalCreated" to created.size,
+            "totalErrors" to errors.size
+        ))
     }
 }
