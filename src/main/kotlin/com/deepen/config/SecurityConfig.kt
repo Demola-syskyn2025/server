@@ -33,6 +33,8 @@ class SecurityConfig(
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/api/health").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
+                    .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
+                    .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers("/api/staff/**").hasAnyRole("DOCTOR", "NURSE")
                     .anyRequest().authenticated()
             }

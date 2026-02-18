@@ -39,6 +39,15 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
     
+    // API Documentation
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    
+    // Database Migration
+    implementation("org.flywaydb:flyway-core")
+    
+    // Monitoring
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    
     // Development
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     
