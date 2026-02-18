@@ -341,7 +341,7 @@ class DataSeeder {
         // Nurse → p1: Weekly wound care (post-surgery), 4 weeks
         seedRecurringSeries(
             appointmentRepository, p1, nurse,
-            dateAt(1, 8, 30), 30, AppointmentType.HOME_VISIT,
+            dateAt(1, 9, 0), 30, AppointmentType.HOME_VISIT,
             RecurringFrequency.WEEKLY, LocalDate.now().plusWeeks(4),
             "Weekly wound care — dressing change & healing check",
             "Matti's home - Tuira, Oulu"
@@ -350,7 +350,7 @@ class DataSeeder {
         // Nurse → p2: Weekly diabetes check, 4 weeks
         seedRecurringSeries(
             appointmentRepository, p2, nurse,
-            dateAt(2, 9), 25, AppointmentType.HOME_VISIT,
+            dateAt(2, 10, 0), 25, AppointmentType.HOME_VISIT,
             RecurringFrequency.WEEKLY, LocalDate.now().plusWeeks(4),
             "Weekly glucose log review, injection site check",
             "Liisa's home - Keskusta, Oulu"
