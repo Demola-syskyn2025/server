@@ -179,20 +179,79 @@ class DataSeeder {
         }
 
         // ================================================================
-        //  STAFF AVAILABILITY
-        //  Doctor: Mon-Fri 09:00–16:00 (7h/day → ~5 home visits + teleconsults)
-        //  Nurse:  Mon-Fri 07:30–15:00 (7.5h/day → ~8 home visits)
+        //  DOCTOR AVAILABILITY - Real Home Care Schedule
+        //  Mon-Fri: 8:00-10:00 Hospital Rounds, 10:00-12:00 Clinic, 1:00-2:00 Admin, 2:00-5:00 Home Visits
+        //  Sat: Emergency on-call only
+        //  Sun: Off
         // ================================================================
-        for (day in 1..5) {
+        for (day in 1..5) { // Monday-Friday
+            // Morning: Hospital Rounds (8:00-10:00) - NOT available for appointments
             staffAvailabilityRepository.save(StaffAvailability(
                 staff = doctor, dayOfWeek = day,
-                startTime = LocalTime.of(9, 0), endTime = LocalTime.of(16, 0), isAvailable = true
+                startTime = LocalTime.of(8, 0), endTime = LocalTime.of(10, 0), isAvailable = false
             ))
+            
+            // Mid-morning: Clinic Appointments (10:00-12:00) - Available for clinic visits
+            staffAvailabilityRepository.save(StaffAvailability(
+                staff = doctor, dayOfWeek = day,
+                startTime = LocalTime.of(10, 0), endTime = LocalTime.of(12, 0), isAvailable = true
+            ))
+            
+            // Lunch: 12:00-13:00 - NOT available
+            staffAvailabilityRepository.save(StaffAvailability(
+                staff = doctor, dayOfWeek = day,
+                startTime = LocalTime.of(12, 0), endTime = LocalTime.of(13, 0), isAvailable = false
+            ))
+            
+            // Afternoon: Admin work (13:00-14:00) - NOT available for appointments
+            staffAvailabilityRepository.save(StaffAvailability(
+                staff = doctor, dayOfWeek = day,
+                startTime = LocalTime.of(13, 0), endTime = LocalTime.of(14, 0), isAvailable = false
+            ))
+            
+            // Late afternoon: Home Visits (14:00-17:00) - Available for home visits
+            staffAvailabilityRepository.save(StaffAvailability(
+                staff = doctor, dayOfWeek = day,
+                startTime = LocalTime.of(14, 0), endTime = LocalTime.of(17, 0), isAvailable = true
+            ))
+        }
+        
+        // Saturday: Emergency on-call (8:00-18:00) - Limited availability
+        staffAvailabilityRepository.save(StaffAvailability(
+            staff = doctor, dayOfWeek = 6,
+            startTime = LocalTime.of(8, 0), endTime = LocalTime.of(18, 0), isAvailable = true
+        ))
+        
+        // Sunday: Off
+        staffAvailabilityRepository.save(StaffAvailability(
+            staff = doctor, dayOfWeek = 0,
+            startTime = LocalTime.of(0, 0), endTime = LocalTime.of(0, 0), isAvailable = false
+        ))
+
+        // ================================================================
+        //  NURSE AVAILABILITY - More flexible for home visits
+        //  Mon-Fri: 7:30-15:00 (7.5h/day) - Mostly home visits with some admin
+        //  Sat: 8:00-14:00 (6h) - Home visits only
+        //  Sun: Off
+        // ================================================================
+        for (day in 1..5) { // Monday-Friday
             staffAvailabilityRepository.save(StaffAvailability(
                 staff = nurse, dayOfWeek = day,
                 startTime = LocalTime.of(7, 30), endTime = LocalTime.of(15, 0), isAvailable = true
             ))
         }
+        
+        // Saturday: Limited home visits
+        staffAvailabilityRepository.save(StaffAvailability(
+            staff = nurse, dayOfWeek = 6,
+            startTime = LocalTime.of(8, 0), endTime = LocalTime.of(14, 0), isAvailable = true
+        ))
+        
+        // Sunday: Off
+        staffAvailabilityRepository.save(StaffAvailability(
+            staff = nurse, dayOfWeek = 0,
+            startTime = LocalTime.of(0, 0), endTime = LocalTime.of(0, 0), isAvailable = false
+        ))
 
         // ================================================================
         //  COMPLETED APPOINTMENTS (recent history — past 2 weeks)
