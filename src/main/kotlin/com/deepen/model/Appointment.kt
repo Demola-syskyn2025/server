@@ -3,7 +3,6 @@ package com.deepen.model
 
 
 import jakarta.persistence.*
-
 import java.time.LocalDateTime
 
 
@@ -32,7 +31,9 @@ enum class AppointmentType {
 
     HOSPITAL_VISIT,
 
-    TELECONSULTATION
+    TELECONSULTATION,
+
+    OFFICE_WORK
 
 }
 
@@ -112,7 +113,16 @@ data class Appointment(
 
     
 
-    val updatedAt: LocalDateTime = LocalDateTime.now()
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id")
+    val plan: SchedulePlan? = null,
+
+    @Column(nullable = false)
+    val isGenerated: Boolean = false,
+
+    @Column(nullable = false)
+    val isLocked: Boolean = false
 )
 

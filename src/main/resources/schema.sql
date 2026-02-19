@@ -113,6 +113,44 @@ CREATE INDEX idx_time_off_staff ON time_off_requests(staff_id);
 CREATE INDEX idx_time_off_dates ON time_off_requests(start_date, end_date);
 
 -- ============================================
+-- SCHEDULE PLANS
+-- ============================================
+
+CREATE TABLE schedule_plans (
+    id BIGSERIAL PRIMARY KEY,
+    week_start_date DATE NOT NULL,
+    status VARCHAR(20) DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'CONFIRMED')),
+    created_by BIGINT REFERENCES users(id),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    confirmed_at TIMESTAMP
+);
+
+CREATE INDEX idx_schedule_plans_week ON schedule_plans(week_start_date);
+CREATE INDEX idx_schedule_plans_status ON schedule_plans(status);
+
+-- ============================================
+-- PATIENT VISIT REQUIREMENTS
+-- ============================================
+
+CREATE TABLE patient_visit_requirements (
+    id BIGSERIAL PRIMARY KEY,
+    patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    priority VARCHAR(20) DEFAULT 'ROUTINE' CHECK (priority IN ('URGENT', 'HIGH', 'ROUTINE')),
+    visits_per_week INT DEFAULT 1,
+    duration_minutes INT DEFAULT 30,
+    visit_type VARCHAR(20) DEFAULT 'HOME_VISIT' CHECK (visit_type IN ('HOME_VISIT', 'HOSPITAL_VISIT', 'TELECONSULTATION')),
+    preferred_time_start TIME,
+    preferred_time_end TIME,
+    location VARCHAR(500),
+    notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_visit_req_patient ON patient_visit_requirements(patient_id);
+CREATE INDEX idx_visit_req_active ON patient_visit_requirements(is_active);
+
+-- ============================================
 -- APPOINTMENTS
 -- ============================================
 
@@ -122,11 +160,14 @@ CREATE TABLE appointments (
     staff_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     scheduled_at TIMESTAMP NOT NULL,
     estimated_duration_minutes INT DEFAULT 30,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('HOME_VISIT', 'HOSPITAL_VISIT', 'TELECONSULTATION')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('HOME_VISIT', 'HOSPITAL_VISIT', 'TELECONSULTATION', 'OFFICE_WORK')),
     status VARCHAR(20) DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'RESCHEDULED')),
     is_emergency BOOLEAN DEFAULT FALSE,
     notes TEXT,
     location VARCHAR(500),
+    plan_id BIGINT REFERENCES schedule_plans(id),
+    is_generated BOOLEAN DEFAULT FALSE,
+    is_locked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

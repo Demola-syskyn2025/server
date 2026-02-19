@@ -64,7 +64,13 @@ data class AppointmentDto(
 
     val location: String?,
 
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+
+    val planId: Long?,
+
+    val isGenerated: Boolean,
+
+    val isLocked: Boolean
 
 )
 

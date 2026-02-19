@@ -160,7 +160,13 @@ class AppointmentService(
 
         location = appointment.location,
 
-        createdAt = appointment.createdAt
+        createdAt = appointment.createdAt,
+
+        planId = appointment.plan?.id,
+
+        isGenerated = appointment.isGenerated,
+
+        isLocked = appointment.isLocked
 
     )
 
