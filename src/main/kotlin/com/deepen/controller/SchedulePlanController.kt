@@ -133,7 +133,7 @@ class SchedulePlanController(
             ?: return ResponseEntity.notFound().build()
 
         val appointments = appointmentRepository.findByPlanId(plan.id)
-        val weekDays = (0L..4L).map { plan.weekStartDate.plusDays(it) }
+        val weekDays = (0L..6L).map { plan.weekStartDate.plusDays(it) }
 
         val staffGroups = appointments.groupBy { it.staff.id }
 

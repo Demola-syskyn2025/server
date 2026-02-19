@@ -9,6 +9,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
 @Service
@@ -26,11 +27,16 @@ class ScheduleEngineService(
     companion object {
         const val WORK_DAY_START_HOUR = 8
         const val WORK_DAY_END_HOUR = 16
-        const val MAX_DAILY_MINUTES = 480       // 8 hours
-        const val MIN_WEEKLY_MINUTES = 2160     // 36 hours
-        const val MAX_WEEKLY_MINUTES = 2280     // 38 hours
+        const val WEEKEND_START_HOUR = 10
+        const val WEEKEND_END_HOUR = 15
+        const val MAX_DAILY_MINUTES = 480        // 8 hours
+        const val MIN_WEEKLY_MINUTES = 1680      // 28 hours (soft target)
+        const val MAX_WEEKLY_MINUTES = 2280      // 38 hours (hard cap)
         const val TRAVEL_BUFFER_MINUTES = 10
-        const val OFFICE_BLOCK_MIN_MINUTES = 15 // minimum office block size
+        const val OFFICE_SPLIT_MIN_MINUTES = 15  // min office fragment during scheduling
+        const val OFFICE_PERSIST_MIN_MINUTES = 120 // min 2-hour office block for persistence
+        const val MAX_DAILY_VISITS = 3           // hard limit per day (except urgent)
+        const val MAX_WEEKEND_OFFICE_STAFF = 2   // max staff on office work per weekend day
     }
 
     // ── Internal data structures ──────────────────────────────────
@@ -101,6 +107,9 @@ class ScheduleEngineService(
         fun dayWorkMinutes(date: LocalDate): Int =
             dailySchedules[date]?.filter { it.type != BlockType.TRAVEL_BUFFER }
                 ?.sumOf { it.durationMinutes } ?: 0
+
+        fun dayVisitCount(date: LocalDate): Int =
+            dailySchedules[date]?.count { it.type == BlockType.VISIT } ?: 0
     }
 
     // ── Main entry point ──────────────────────────────────────────
@@ -146,12 +155,13 @@ class ScheduleEngineService(
             return Pair(plan, violations)
         }
 
-        val weekEndDate = weekStartDate.plusDays(4) // Friday
-        val weekDays = (0L..4L).map { weekStartDate.plusDays(it) }
+        val weekDays = (0L..6L).map { weekStartDate.plusDays(it) } // Mon-Sun
+        val weekdayDates = weekDays.filter { it.dayOfWeek.value <= 5 } // Mon-Fri
+        val weekendDates = weekDays.filter { it.dayOfWeek.value > 5 }  // Sat-Sun
 
         // ── Step 0: Build staff week schedules ───────────────────
         val staffSchedules = allStaff.map { staff ->
-            val dayOff = determineDayOff(staff, allStaff)
+            val dayOff = determineDayOff(staff, weekStartDate)
             val schedule = StaffWeekSchedule(
                 staffId = staff.id,
                 staffName = "${staff.firstName} ${staff.lastName}",
@@ -159,8 +169,8 @@ class ScheduleEngineService(
                 dayOff = dayOff,
                 dailySchedules = mutableMapOf()
             )
-            // Initialize working days
-            for (date in weekDays) {
+            // Initialize weekdays (Mon-Fri, skip day off and time off)
+            for (date in weekdayDates) {
                 if (date.dayOfWeek == dayOff) continue
                 if (timeOffService.isStaffOnTimeOff(staff.id, date)) continue
                 schedule.dailySchedules[date] = mutableListOf()
@@ -168,13 +178,28 @@ class ScheduleEngineService(
             schedule
         }
 
+        // Weekend: assign office work to max MAX_WEEKEND_OFFICE_STAFF staff per day
+        for (date in weekendDates) {
+            val eligible = staffSchedules
+                .filter { it.dayOff != date.dayOfWeek }
+                .filter { !timeOffService.isStaffOnTimeOff(it.staffId, date) }
+                .sortedBy { it.staffId } // deterministic ordering
+                .take(MAX_WEEKEND_OFFICE_STAFF)
+            for (schedule in eligible) {
+                schedule.dailySchedules[date] = mutableListOf()
+            }
+        }
+
         // ── Step 1: Generate office work skeleton ────────────────
         for (schedule in staffSchedules) {
             for ((date, blocks) in schedule.dailySchedules) {
+                val isWeekend = date.dayOfWeek.value > 5
+                val startHour = if (isWeekend) WEEKEND_START_HOUR else WORK_DAY_START_HOUR
+                val endHour = if (isWeekend) WEEKEND_END_HOUR else WORK_DAY_END_HOUR
                 blocks.add(
                     TimeBlock(
-                        start = LocalTime.of(WORK_DAY_START_HOUR, 0),
-                        end = LocalTime.of(WORK_DAY_END_HOUR, 0),
+                        start = LocalTime.of(startHour, 0),
+                        end = LocalTime.of(endHour, 0),
                         type = BlockType.OFFICE
                     )
                 )
@@ -233,6 +258,9 @@ class ScheduleEngineService(
             }
         }
 
+        for (schedule in staffSchedules) {
+            log.info("  ${schedule.staffName}: dayOff=${schedule.dayOff}, visits=${schedule.totalVisits()}, workDays=${schedule.dailySchedules.size}")
+        }
         log.info("Steps 3-4 complete: visits placed, ${violations.size} violations so far")
 
         // ── Step 5: Workload validation & office block fill ──────
@@ -250,7 +278,7 @@ class ScheduleEngineService(
             for ((date, blocks) in schedule.dailySchedules) {
                 for (block in blocks) {
                     if (block.type == BlockType.TRAVEL_BUFFER) continue
-                    if (block.durationMinutes < OFFICE_BLOCK_MIN_MINUTES && block.type == BlockType.OFFICE) continue
+                    if (block.type == BlockType.OFFICE && block.durationMinutes < OFFICE_PERSIST_MIN_MINUTES) continue
 
                     val patientUser = if (block.type == BlockType.VISIT && block.visitData != null) {
                         userService.findById(block.visitData.patientId)!!
@@ -319,14 +347,15 @@ class ScheduleEngineService(
         return schedulePlanRepository.save(confirmed)
     }
 
-    // ── Helper: determine day off ────────────────────────────────
-    // Deterministic: assign day off based on staff's position in sorted list
-    private fun determineDayOff(staff: User, allStaff: List<User>): DayOfWeek {
-        val sorted = allStaff.sortedBy { it.id }
-        val index = sorted.indexOfFirst { it.id == staff.id }
-        // Cycle through Mon-Fri
-        val weekdays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
-        return weekdays[index % weekdays.size]
+    // ── Helper: rotating deterministic day off ───────────────────
+    // dayOff = (weekIndex + hash(staffId)) % 7, rotates each week
+    private fun determineDayOff(staff: User, weekStartDate: LocalDate): DayOfWeek {
+        val epochMonday = LocalDate.of(2026, 1, 5) // reference Monday for week numbering
+        val weekIndex = ChronoUnit.WEEKS.between(epochMonday, weekStartDate).toInt()
+        val staffHash = ((staff.id * 31 + 17) % 7 + 7).toInt() % 7 // stable 0-6
+        val allDays = DayOfWeek.values() // MONDAY..SUNDAY
+        val dayIndex = ((weekIndex + staffHash) % 7 + 7) % 7
+        return allDays[dayIndex]
     }
 
     // ── Helper: time window width (for sorting) ──────────────────
@@ -395,17 +424,31 @@ class ScheduleEngineService(
         weekDays: List<LocalDate>
     ): Pair<LocalDate, LocalTime>? {
         val totalNeeded = visit.durationMinutes + TRAVEL_BUFFER_MINUTES
+        val isUrgent = visit.priority == VisitPriority.URGENT
 
         for (date in weekDays) {
-            val blocks = schedule.dailySchedules[date] ?: continue // day off or time off
+            val blocks = schedule.dailySchedules[date] ?: continue
+            val isWeekend = date.dayOfWeek.value > 5
 
-            // Check daily visit+travel load (office work is elastic and will be reduced)
+            // Weekend: only urgent visits allowed (policy 5)
+            if (isWeekend && !isUrgent) continue
+
+            // Daily visit limit: max MAX_DAILY_VISITS per day, urgent bypasses (policy 2)
+            if (!isUrgent && schedule.dayVisitCount(date) >= MAX_DAILY_VISITS) continue
+
+            // Check daily capacity (weekend days have shorter hours)
+            val dayMaxMinutes = if (isWeekend) {
+                java.time.Duration.between(
+                    LocalTime.of(WEEKEND_START_HOUR, 0),
+                    LocalTime.of(WEEKEND_END_HOUR, 0)
+                ).toMinutes().toInt()
+            } else MAX_DAILY_MINUTES
             val currentVisitMinutes = blocks
                 .filter { it.type == BlockType.VISIT || it.type == BlockType.TRAVEL_BUFFER }
                 .sumOf { it.durationMinutes }
-            if (currentVisitMinutes + totalNeeded > MAX_DAILY_MINUTES) continue
+            if (currentVisitMinutes + totalNeeded > dayMaxMinutes) continue
 
-            // Check weekly visit+travel load
+            // Weekly hours hard cap - only count visit+travel (office is elastic, trimmed in Step 5)
             val weeklyVisitMinutes = schedule.dailySchedules.values.sumOf { dayBlocks ->
                 dayBlocks.filter { it.type == BlockType.VISIT || it.type == BlockType.TRAVEL_BUFFER }
                     .sumOf { it.durationMinutes }
@@ -460,6 +503,8 @@ class ScheduleEngineService(
         startTime: LocalTime
     ) {
         val blocks = schedule.dailySchedules[date]!!
+        val isWeekend = date.dayOfWeek.value > 5
+        val endOfDay = LocalTime.of(if (isWeekend) WEEKEND_END_HOUR else WORK_DAY_END_HOUR, 0)
         val visitEnd = startTime.plusMinutes(visit.durationMinutes.toLong())
         val bufferEnd = visitEnd.plusMinutes(TRAVEL_BUFFER_MINUTES.toLong())
 
@@ -481,7 +526,7 @@ class ScheduleEngineService(
 
         val travelBlock = TimeBlock(
             start = visitEnd,
-            end = if (bufferEnd.isAfter(LocalTime.of(WORK_DAY_END_HOUR, 0))) LocalTime.of(WORK_DAY_END_HOUR, 0) else bufferEnd,
+            end = if (bufferEnd.isAfter(endOfDay)) endOfDay else bufferEnd,
             type = BlockType.TRAVEL_BUFFER
         )
 
@@ -496,7 +541,7 @@ class ScheduleEngineService(
             // Office before the visit
             if (affectedOffice.start.isBefore(startTime)) {
                 val beforeMinutes = java.time.Duration.between(affectedOffice.start, startTime).toMinutes().toInt()
-                if (beforeMinutes >= OFFICE_BLOCK_MIN_MINUTES) {
+                if (beforeMinutes >= OFFICE_SPLIT_MIN_MINUTES) {
                     blocks.add(TimeBlock(affectedOffice.start, startTime, BlockType.OFFICE))
                 }
             }
@@ -505,19 +550,19 @@ class ScheduleEngineService(
             blocks.add(visitBlock)
 
             // Travel buffer
-            if (travelBlock.durationMinutes > 0 && !travelBlock.end.isAfter(LocalTime.of(WORK_DAY_END_HOUR, 0))) {
+            if (travelBlock.durationMinutes > 0 && !travelBlock.end.isAfter(endOfDay)) {
                 blocks.add(travelBlock)
             }
 
             // Office after the visit + buffer
-            val afterStart = if (travelBlock.durationMinutes > 0 && !travelBlock.end.isAfter(LocalTime.of(WORK_DAY_END_HOUR, 0))) {
+            val afterStart = if (travelBlock.durationMinutes > 0 && !travelBlock.end.isAfter(endOfDay)) {
                 travelBlock.end
             } else {
                 visitEnd
             }
             if (afterStart.isBefore(affectedOffice.end)) {
                 val afterMinutes = java.time.Duration.between(afterStart, affectedOffice.end).toMinutes().toInt()
-                if (afterMinutes >= OFFICE_BLOCK_MIN_MINUTES) {
+                if (afterMinutes >= OFFICE_SPLIT_MIN_MINUTES) {
                     blocks.add(TimeBlock(afterStart, affectedOffice.end, BlockType.OFFICE))
                 }
             }
@@ -533,34 +578,61 @@ class ScheduleEngineService(
         schedule: StaffWeekSchedule,
         violations: MutableList<String>
     ) {
-        val totalWork = schedule.totalWorkMinutes()
-
+        // ── Trim excess hours (38h HARD cap) ─────────────────────
+        var totalWork = schedule.totalWorkMinutes()
         if (totalWork > MAX_WEEKLY_MINUTES) {
-            violations.add(
-                "OVERLOADED: ${schedule.staffName} has $totalWork minutes (max $MAX_WEEKLY_MINUTES)"
-            )
+            var excess = totalWork - MAX_WEEKLY_MINUTES
+            // Trim office blocks from last days first
+            for (date in schedule.dailySchedules.keys.sortedDescending()) {
+                if (excess <= 0) break
+                val blocks = schedule.dailySchedules[date]!!
+                val officeBlocks = blocks.filter { it.type == BlockType.OFFICE }.sortedByDescending { it.start }
+                for (office in officeBlocks) {
+                    if (excess <= 0) break
+                    val trimAmount = minOf(excess, office.durationMinutes)
+                    blocks.remove(office)
+                    val remaining = office.durationMinutes - trimAmount
+                    if (remaining >= OFFICE_SPLIT_MIN_MINUTES) {
+                        blocks.add(TimeBlock(office.start, office.start.plusMinutes(remaining.toLong()), BlockType.OFFICE))
+                    }
+                    excess -= trimAmount
+                }
+                blocks.sortBy { it.start }
+            }
+            totalWork = schedule.totalWorkMinutes()
+            if (totalWork > MAX_WEEKLY_MINUTES) {
+                violations.add(
+                    "OVERLOADED: ${schedule.staffName} has ${totalWork}min (max ${MAX_WEEKLY_MINUTES}min) after trimming"
+                )
+            }
         }
 
+        // ── Fill underloaded schedules ───────────────────────────
         if (totalWork < MIN_WEEKLY_MINUTES) {
-            // Try to fill with additional office blocks
             val deficit = MIN_WEEKLY_MINUTES - totalWork
             var filled = 0
 
             for ((date, blocks) in schedule.dailySchedules) {
                 if (filled >= deficit) break
+                val isWeekend = date.dayOfWeek.value > 5
+                val dayMax = if (isWeekend) {
+                    java.time.Duration.between(
+                        LocalTime.of(WEEKEND_START_HOUR, 0),
+                        LocalTime.of(WEEKEND_END_HOUR, 0)
+                    ).toMinutes().toInt()
+                } else MAX_DAILY_MINUTES
                 val dayWork = schedule.dayWorkMinutes(date)
-                val dayRemaining = MAX_DAILY_MINUTES - dayWork
+                val dayRemaining = dayMax - dayWork
                 if (dayRemaining <= 0) continue
 
-                // Find gaps in the schedule where office blocks can be inserted
-                val gaps = findGaps(blocks)
+                val gaps = findGaps(blocks, date)
                 for (gap in gaps) {
                     if (filled >= deficit) break
                     val gapMinutes = java.time.Duration.between(gap.first, gap.second).toMinutes().toInt()
-                    if (gapMinutes < OFFICE_BLOCK_MIN_MINUTES) continue
+                    if (gapMinutes < OFFICE_SPLIT_MIN_MINUTES) continue
 
                     val fillMinutes = minOf(gapMinutes, dayRemaining, deficit - filled)
-                    if (fillMinutes >= OFFICE_BLOCK_MIN_MINUTES) {
+                    if (fillMinutes >= OFFICE_SPLIT_MIN_MINUTES) {
                         blocks.add(
                             TimeBlock(
                                 gap.first,
@@ -573,23 +645,25 @@ class ScheduleEngineService(
                 }
                 blocks.sortBy { it.start }
             }
+        }
 
-            val finalTotal = schedule.totalWorkMinutes()
-            if (finalTotal < MIN_WEEKLY_MINUTES) {
-                violations.add(
-                    "UNDERLOADED: ${schedule.staffName} has $finalTotal minutes after fill (target $MIN_WEEKLY_MINUTES). " +
-                    "Day off (${schedule.dayOff}) limits available hours."
-                )
-            }
+        // ── Soft warning: below 28h target ──────────────────────
+        val finalTotal = schedule.totalWorkMinutes()
+        if (finalTotal < MIN_WEEKLY_MINUTES) {
+            violations.add(
+                "WARNING: ${schedule.staffName} has ${finalTotal}min (${finalTotal / 60}h${finalTotal % 60}m) " +
+                "below ${MIN_WEEKLY_MINUTES / 60}h soft target. Day off: ${schedule.dayOff}"
+            )
         }
     }
 
     /** Find unoccupied time gaps within working hours */
-    private fun findGaps(blocks: List<TimeBlock>): List<Pair<LocalTime, LocalTime>> {
+    private fun findGaps(blocks: List<TimeBlock>, date: LocalDate): List<Pair<LocalTime, LocalTime>> {
         val sorted = blocks.sortedBy { it.start }
         val gaps = mutableListOf<Pair<LocalTime, LocalTime>>()
-        val workStart = LocalTime.of(WORK_DAY_START_HOUR, 0)
-        val workEnd = LocalTime.of(WORK_DAY_END_HOUR, 0)
+        val isWeekend = date.dayOfWeek.value > 5
+        val workStart = LocalTime.of(if (isWeekend) WEEKEND_START_HOUR else WORK_DAY_START_HOUR, 0)
+        val workEnd = LocalTime.of(if (isWeekend) WEEKEND_END_HOUR else WORK_DAY_END_HOUR, 0)
 
         var cursor = workStart
         for (block in sorted) {

@@ -158,41 +158,41 @@ class DataSeeder {
         )
 
         val visitReqSeeds = listOf(
-            // Patients 0-2: URGENT, weekly home visits
-            VisitReqSeed(VisitPriority.URGENT, 2, 45, AppointmentType.HOME_VISIT, LocalTime.of(8, 0), LocalTime.of(12, 0), "Kaijonharju, Oulu", "Post-surgery wound care, twice weekly"),
-            VisitReqSeed(VisitPriority.URGENT, 2, 40, AppointmentType.HOME_VISIT, null, null, "Tuira, Oulu", "Insulin management, unstable levels"),
+            // Patients 0-2: URGENT, 1 home visit/week
+            VisitReqSeed(VisitPriority.URGENT, 1, 45, AppointmentType.HOME_VISIT, LocalTime.of(8, 0), LocalTime.of(12, 0), "Kaijonharju, Oulu", "Post-surgery wound care"),
+            VisitReqSeed(VisitPriority.URGENT, 1, 40, AppointmentType.HOME_VISIT, null, null, "Tuira, Oulu", "Insulin management, unstable levels"),
             VisitReqSeed(VisitPriority.URGENT, 1, 60, AppointmentType.HOME_VISIT, LocalTime.of(9, 0), LocalTime.of(11, 0), "Keskusta, Oulu", "Palliative care assessment"),
-            // Patients 3-7: HIGH priority
-            VisitReqSeed(VisitPriority.HIGH, 2, 30, AppointmentType.HOME_VISIT, null, null, "Linnanmaa, Oulu", "COPD monitoring, twice weekly"),
+            // Patients 3-7: HIGH priority, 1 home visit/week
+            VisitReqSeed(VisitPriority.HIGH, 1, 30, AppointmentType.HOME_VISIT, null, null, "Linnanmaa, Oulu", "COPD monitoring"),
             VisitReqSeed(VisitPriority.HIGH, 1, 45, AppointmentType.HOME_VISIT, LocalTime.of(10, 0), LocalTime.of(14, 0), "Myllyoja, Oulu", "Cardiac rehabilitation"),
-            VisitReqSeed(VisitPriority.HIGH, 1, 30, AppointmentType.TELECONSULTATION, null, null, null, "Blood pressure monitoring"),
-            VisitReqSeed(VisitPriority.HIGH, 2, 30, AppointmentType.HOME_VISIT, LocalTime.of(8, 0), LocalTime.of(10, 0), "Pateniemi, Oulu", "Diabetes wound care"),
+            VisitReqSeed(VisitPriority.HIGH, 1, 30, AppointmentType.HOME_VISIT, null, null, "Kontinkangas, Oulu", "Blood pressure monitoring"),
+            VisitReqSeed(VisitPriority.HIGH, 1, 30, AppointmentType.HOME_VISIT, LocalTime.of(8, 0), LocalTime.of(10, 0), "Pateniemi, Oulu", "Diabetes wound care"),
             VisitReqSeed(VisitPriority.HIGH, 1, 40, AppointmentType.HOME_VISIT, null, null, "Kaukovainio, Oulu", "Fall risk assessment"),
-            // Patients 8-19: ROUTINE
+            // Patients 8-19: ROUTINE, 1 home visit/week
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Haukipudas, Oulu", "Routine checkup"),
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.TELECONSULTATION, LocalTime.of(13, 0), LocalTime.of(16, 0), null, "Medication review"),
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, LocalTime.of(13, 0), LocalTime.of(16, 0), "Tuira, Oulu", "Medication review"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Oulunsalo, Oulu", "Blood sugar monitoring"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Kempele", "Physiotherapy follow-up"),
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 20, AppointmentType.TELECONSULTATION, null, null, null, "Mental health check-in"),
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Keskusta, Oulu", "Mental health check-in"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, LocalTime.of(8, 0), LocalTime.of(12, 0), "Liminka", "Chronic pain management"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Ii", "Respiratory therapy"),
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 25, AppointmentType.TELECONSULTATION, null, null, null, "Weight management counseling"),
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Linnanmaa, Oulu", "Weight management counseling"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Muhos", "Mobility assessment"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, LocalTime.of(12, 0), LocalTime.of(16, 0), "Kiiminki", "Elderly care routine visit"),
-            // Patients 20-24: ROUTINE, some teleconsultation
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 20, AppointmentType.TELECONSULTATION, null, null, null, "Prescription renewal consultation"),
+            // Patients 20-24: ROUTINE, 1 home visit/week
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Pateniemi, Oulu", "Prescription renewal visit"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Ylikiiminki", "Post-stroke rehabilitation"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Haukipudas, Oulu", "Dementia care visit"),
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 20, AppointmentType.TELECONSULTATION, LocalTime.of(14, 0), LocalTime.of(16, 0), null, "Lab results review"),
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, LocalTime.of(14, 0), LocalTime.of(16, 0), "Kaukovainio, Oulu", "Lab results follow-up"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Oulunsalo, Oulu", "Nutritional assessment"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Kempele", "Skin integrity check"),
-            // Patients 25-29: ROUTINE
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 25, AppointmentType.TELECONSULTATION, null, null, null, "Sleep disorder follow-up"),
+            // Patients 25-29: ROUTINE, 1 home visit/week
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Kontinkangas, Oulu", "Sleep disorder follow-up"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Muhos", "Catheter maintenance"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Liminka", "General wellness check"),
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 20, AppointmentType.TELECONSULTATION, null, null, null, "Anxiety management follow-up"),
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Ii", "Anxiety management follow-up"),
             VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Ii", "Osteoporosis care"),
-            VisitReqSeed(VisitPriority.ROUTINE, 1, 25, AppointmentType.TELECONSULTATION, null, null, null, "Hypertension follow-up")
+            VisitReqSeed(VisitPriority.ROUTINE, 1, 30, AppointmentType.HOME_VISIT, null, null, "Haukipudas, Oulu", "Hypertension follow-up")
         )
 
         for ((i, patient) in patients.withIndex()) {
