@@ -7,8 +7,18 @@ Spring Boot backend service for the "Transparency for Patients at Home" applicat
 - **Language:** Kotlin
 - **Framework:** Spring Boot 3.2
 - **Database:** PostgreSQL (H2 for development)
+- **Migrations:** Flyway (V1-V3)
 - **Authentication:** JWT
 - **Containerization:** Docker
+
+## Key Features
+
+- **Role-based access** (PATIENT, FAMILY_MEMBER, DOCTOR, NURSE)
+- **Appointments** CRUD
+- **Weekly auto-scheduling** (Schedule Plans)
+  - Generates a weekly draft plan and supports confirmation/locking
+  - Enforces workload policies (daily/weekly limits)
+  - Ensures **minimum office coverage** during business hours
 
 ## Project Structure
 
@@ -23,8 +33,9 @@ server/
 │   ├── security/        # JWT authentication
 │   └── service/         # Business logic
 ├── src/main/resources/
-│   ├── application.yml      # Dev configuration
-│   └── application-prod.yml # Production configuration
+│   ├── application.yml          # Dev configuration (H2)
+│   ├── application-prod.yml     # Production configuration (PostgreSQL)
+│   └── db/migration/            # Flyway migrations (V1, V2, V3)
 ├── Dockerfile
 └── docker-compose.yml
 ```
@@ -66,6 +77,34 @@ docker-compose up --build
 docker-compose down
 ```
 
+The Docker setup runs the backend with the `prod` profile against PostgreSQL and applies Flyway migrations automatically:
+
+- **V1**: schema
+- **V2**: initial staff/patient/family demo data
+- **V3**: scheduling tables + additional demo data used by the auto-scheduling engine
+
+If you want a fresh database state:
+
+```bash
+docker-compose down -v
+docker-compose up --build
+```
+
+## Test Accounts (Docker/Flyway)
+
+All accounts created by migrations use the password:
+
+- **Password:** `password`
+
+Examples:
+
+- **Doctor**: `dr.sarah.johnson@hospital.com`
+- **Doctor**: `dr.michael.chen@hospital.com`
+- **Nurse**: `nurse.emily.davis@hospital.com`
+- **Nurse**: `nurse.james.wilson@hospital.com`
+- **Patient**: `patient.john.smith@email.com`
+- **Family**: `family.jane.smith@email.com`
+
 ## API Endpoints
 
 ### Health Check
@@ -82,6 +121,15 @@ docker-compose down
 - `POST /api/appointments` - Create appointment (staff only)
 - `PATCH /api/appointments/{id}` - Update appointment
 - `DELETE /api/appointments/{id}` - Cancel appointment
+
+### Schedule Plans (Weekly Auto-Scheduling)
+
+- `POST /api/schedule-plans/generate` - Generate a weekly plan (DRAFT)
+- `POST /api/schedule-plans/{planId}/confirm` - Confirm and lock the plan (CONFIRMED)
+- `GET /api/schedule-plans/{planId}` - Get plan details + appointments
+- `GET /api/schedule-plans/week/{weekStartDate}` - Get plan by week start date
+- `GET /api/schedule-plans/{planId}/summary` - Staff breakdown summary
+- `GET /api/schedule-plans` - List all plans
 
 ### Care Tasks
 - `GET /api/tasks/{id}` - Get task by ID
@@ -111,10 +159,7 @@ docker-compose down
 | `DB_PASSWORD` | Database password | postgres |
 | `JWT_SECRET` | JWT signing key (min 32 chars) | - |
 
-## Next Steps
+## Notes
 
-1. [ ] Add data seeding for development
-2. [ ] Implement hospital staff management endpoints
-3. [ ] Add scheduling logic for appointments
-4. [ ] Connect to Firebase for additional features
-5. [ ] Add unit and integration tests
+- Local development uses H2 by default; Docker uses PostgreSQL + Flyway.
+- The auto-scheduling engine requires the Flyway scheduling tables/data (V3) when running against PostgreSQL.
