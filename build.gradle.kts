@@ -42,7 +42,7 @@ dependencies {
     // API Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
     
-    // Database Migration
+    // Database Migration (Flyway 9.x via Spring Boot BOM includes PostgreSQL support)
     implementation("org.flywaydb:flyway-core")
     
     // Monitoring

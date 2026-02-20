@@ -1,4 +1,5 @@
-$body = @{ email = "dr.smith@hospital.fi"; password = "password123" } | ConvertTo-Json
+# Use V2 credentials for Docker (dr.sarah.johnson), or DataSeeder credentials for H2 (dr.smith)
+$body = @{ email = "dr.sarah.johnson@hospital.com"; password = "password" } | ConvertTo-Json
 $login = Invoke-RestMethod -Uri http://localhost:8080/api/auth/login -Method Post -ContentType "application/json" -Body $body
 $token = $login.token
 

@@ -37,6 +37,7 @@ class ScheduleEngineService(
         const val OFFICE_PERSIST_MIN_MINUTES = 120 // min 2-hour office block for persistence
         const val MAX_DAILY_VISITS = 3           // hard limit per day (except urgent)
         const val MAX_WEEKEND_OFFICE_STAFF = 2   // max staff on office work per weekend day
+        const val MIN_OFFICE_COVERAGE = 1        // minimum staff doing office work during business hours
     }
 
     // ── Internal data structures ──────────────────────────────────
@@ -378,7 +379,7 @@ class ScheduleEngineService(
         val candidateOrder = buildStaffOrder(visit, staffSchedules)
 
         for (schedule in candidateOrder) {
-            val slot = findSlotForVisit(visit, schedule, weekDays)
+            val slot = findSlotForVisit(visit, schedule, staffSchedules, weekDays)
             if (slot != null) {
                 placeVisitInSchedule(visit, schedule, slot.first, slot.second)
                 return true
@@ -388,7 +389,7 @@ class ScheduleEngineService(
         // Failure: try any staff member as fallback
         for (schedule in staffSchedules) {
             if (schedule in candidateOrder) continue
-            val slot = findSlotForVisit(visit, schedule, weekDays)
+            val slot = findSlotForVisit(visit, schedule, staffSchedules, weekDays)
             if (slot != null) {
                 placeVisitInSchedule(visit, schedule, slot.first, slot.second)
                 violations.add(
@@ -417,10 +418,48 @@ class ScheduleEngineService(
         return if (primary != null) listOf(primary) + others else others
     }
 
+    /** Check if placing a visit would violate minimum office coverage */
+    private fun wouldViolateOfficeCoverage(
+        visit: VisitRequest,
+        targetSchedule: StaffWeekSchedule,
+        allSchedules: List<StaffWeekSchedule>,
+        date: LocalDate,
+        visitStartTime: LocalTime
+    ): Boolean {
+        val visitEndTime = visitStartTime.plusMinutes((visit.durationMinutes + TRAVEL_BUFFER_MINUTES).toLong())
+        val isWeekend = date.dayOfWeek.value > 5
+        
+        // Count how many other staff will be doing office work during this visit time
+        var officeStaffCount = 0
+        
+        for (otherSchedule in allSchedules) {
+            if (otherSchedule.staffId == targetSchedule.staffId) continue // Skip the staff we're scheduling
+            
+            val otherBlocks = otherSchedule.dailySchedules[date] ?: continue
+            
+            // Check if this other staff has office work that overlaps with our visit time
+            for (block in otherBlocks) {
+                if (block.type == BlockType.OFFICE) {
+                    // Check for overlap: office block overlaps with visit time
+                    if (block.start.isBefore(visitEndTime) && block.end.isAfter(visitStartTime)) {
+                        officeStaffCount++
+                        break // This staff has office coverage during the visit
+                    }
+                }
+            }
+        }
+        
+        // During weekends, office coverage requirement is relaxed
+        val minRequired = if (isWeekend) 0 else MIN_OFFICE_COVERAGE
+        
+        return officeStaffCount < minRequired
+    }
+
     /** Find earliest feasible time slot on any working day */
     private fun findSlotForVisit(
         visit: VisitRequest,
         schedule: StaffWeekSchedule,
+        allSchedules: List<StaffWeekSchedule>,
         weekDays: List<LocalDate>
     ): Pair<LocalDate, LocalTime>? {
         val totalNeeded = visit.durationMinutes + TRAVEL_BUFFER_MINUTES
@@ -456,7 +495,7 @@ class ScheduleEngineService(
             if (weeklyVisitMinutes + totalNeeded > MAX_WEEKLY_MINUTES) continue
 
             // Find office blocks that can be split to accommodate the visit
-            val slotTime = findTimeInBlocks(blocks, visit, totalNeeded)
+            val slotTime = findTimeInBlocks(blocks, visit, totalNeeded, allSchedules, schedule, date)
             if (slotTime != null) return Pair(date, slotTime)
         }
         return null
@@ -466,7 +505,10 @@ class ScheduleEngineService(
     private fun findTimeInBlocks(
         blocks: MutableList<TimeBlock>,
         visit: VisitRequest,
-        totalNeeded: Int // visit duration + travel buffer
+        totalNeeded: Int, // visit duration + travel buffer
+        allSchedules: List<StaffWeekSchedule>,
+        schedule: StaffWeekSchedule,
+        date: LocalDate
     ): LocalTime? {
         // Find office blocks, try to place visit inside them
         val officeBlocks = blocks.filter { it.type == BlockType.OFFICE }
@@ -489,7 +531,12 @@ class ScheduleEngineService(
             val availableMinutes = java.time.Duration.between(searchStart, searchEnd).toMinutes().toInt()
             if (availableMinutes < totalNeeded) continue
 
-            // The visit fits at searchStart
+            // Office coverage constraint: ensure at least MIN_OFFICE_COVERAGE staff remain doing office work
+            if (wouldViolateOfficeCoverage(visit, schedule, allSchedules, date, searchStart)) {
+                continue // Skip this slot to maintain office coverage
+            }
+
+            // The visit fits at searchStart and maintains office coverage
             return searchStart
         }
         return null
