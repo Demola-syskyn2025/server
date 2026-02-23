@@ -10,6 +10,11 @@ enum class RescheduleStatus {
     ALTERNATIVE_OFFERED
 }
 
+enum class RequestType {
+    RESCHEDULE,
+    CANCEL
+}
+
 @Entity
 @Table(name = "reschedule_requests")
 data class RescheduleRequest(
@@ -27,6 +32,10 @@ data class RescheduleRequest(
 
     @Column(length = 500)
     val reason: String? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    val requestType: RequestType = RequestType.RESCHEDULE,
 
     val preferredDate1: LocalDateTime? = null,
 

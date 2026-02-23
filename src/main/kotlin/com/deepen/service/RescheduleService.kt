@@ -43,6 +43,7 @@ class RescheduleService(
                 appointment = appointment,
                 requestedBy = user,
                 reason = request.reason,
+                requestType = request.requestType,
                 preferredDate1 = request.preferredDate1,
                 preferredDate2 = request.preferredDate2,
                 preferredDate3 = request.preferredDate3
@@ -89,6 +90,7 @@ class RescheduleService(
         patientName = "${reschedule.appointment.patient.firstName} ${reschedule.appointment.patient.lastName}",
         requestedBy = userService.toDto(reschedule.requestedBy),
         reason = reschedule.reason,
+        requestType = reschedule.requestType,
         preferredDate1 = reschedule.preferredDate1,
         preferredDate2 = reschedule.preferredDate2,
         preferredDate3 = reschedule.preferredDate3,

@@ -1,11 +1,13 @@
 package com.deepen.dto
 
 import com.deepen.model.RescheduleStatus
+import com.deepen.model.RequestType
 import java.time.LocalDateTime
 
 data class CreateRescheduleRequest(
     val appointmentId: Long,
     val reason: String? = null,
+    val requestType: RequestType = RequestType.RESCHEDULE,
     val preferredDate1: LocalDateTime? = null,
     val preferredDate2: LocalDateTime? = null,
     val preferredDate3: LocalDateTime? = null
@@ -23,6 +25,7 @@ data class RescheduleRequestDto(
     val patientName: String,
     val requestedBy: UserDto,
     val reason: String?,
+    val requestType: RequestType,
     val preferredDate1: LocalDateTime?,
     val preferredDate2: LocalDateTime?,
     val preferredDate3: LocalDateTime?,

@@ -27,6 +27,7 @@ class DataSeeder {
         timeOffRequestRepository: TimeOffRequestRepository,
         rescheduleRequestRepository: RescheduleRequestRepository,
         patientVisitRequirementRepository: PatientVisitRequirementRepository,
+        familyPatientLinkRepository: FamilyPatientLinkRepository,
         passwordEncoder: PasswordEncoder
     ): CommandLineRunner = CommandLineRunner {
 
@@ -98,6 +99,15 @@ class DataSeeder {
         // ── Family members (2) ───────────────────
         val family1 = userRepository.save(User(email = "family1@email.com", password = encodedPassword, firstName = "Pekka", lastName = "Virtanen", phoneNumber = "+358401234201", role = UserRole.FAMILY_MEMBER))
         val family2 = userRepository.save(User(email = "family2@email.com", password = encodedPassword, firstName = "Laura", lastName = "Korhonen", phoneNumber = "+358401234202", role = UserRole.FAMILY_MEMBER))
+
+        // ══════════════════════════════════════════
+        // FAMILY-PATIENT LINKS
+        // Link family members to some patients
+        // ══════════════════════════════════════════
+        familyPatientLinkRepository.save(FamilyPatientLink(familyMember = family1, patient = patients[0], relationship = "Spouse"))
+        familyPatientLinkRepository.save(FamilyPatientLink(familyMember = family1, patient = patients[1], relationship = "Parent"))
+        familyPatientLinkRepository.save(FamilyPatientLink(familyMember = family2, patient = patients[2], relationship = "Child"))
+        familyPatientLinkRepository.save(FamilyPatientLink(familyMember = family2, patient = patients[3], relationship = "Sibling"))
 
         // ══════════════════════════════════════════
         // STAFF PROFILES
